@@ -11,6 +11,7 @@ import (
 
 	"github.com/dgrijalva/jwt-go"
 	"github.com/jinzhu/gorm"
+	_ "github.com/jinzhu/gorm/dialects/postgres"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -202,4 +203,49 @@ func GenerateJwt(email string) (string, error) {
 		return "", err
 	}
 	return tokenString, nil
+}
+
+//func to check if the user is authorize
+func IsAuthorized(handler http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+
+		if r.Header["Token"] == nil {
+			var err Error
+			err = SetError(err, "No Token Found")
+			json.NewEncoder(w).Encode(err)
+			return
+		}
+
+		err := godotenv.Load(".env")
+
+		if err != nil {
+			log.Fatalf("Error loading .env file")
+		}
+
+		secretkey := os.Getenv("SECRET_KEY")
+
+		var mySigningKey = []byte(secretkey)
+
+		token, err := jwt.Parse(r.Header["Token"][0], func(token *jwt.Token) (interface{}, error) {
+			if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+				return nil, fmt.Errorf("There was an error in parsing token.")
+			}
+			return mySigningKey, nil
+		})
+
+		if err != nil {
+			var err Error
+			err = SetError(err, "Your Token has been expired.")
+			json.NewEncoder(w).Encode(err)
+			return
+		}
+
+		if _, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+			return
+		}
+
+		var reserr Error
+		reserr = SetError(reserr, "Not Authorized.")
+		json.NewEncoder(w).Encode(err)
+	}
 }
