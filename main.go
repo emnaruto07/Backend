@@ -1,7 +1,16 @@
 package main
 
-import "fmt"
+import (
+	"Backend/router"
+	"fmt"
+	"log"
+	"net/http"
+)
 
 func main() {
-	fmt.Println("Hello world!")
+	r := router.Router()
+
+	fmt.Println("Starting server on port 8000.")
+
+	log.Fatal(http.ListenAndServe(":8000", r))
 }
