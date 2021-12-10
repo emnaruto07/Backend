@@ -55,6 +55,8 @@ func InitialMigration() {
 }
 
 func CreateUser(w http.ResponseWriter, r *http.Request) {
+	connection := createConnection()
+	defer connection.Close()
 
 }
 
